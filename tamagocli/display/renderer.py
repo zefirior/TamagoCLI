@@ -52,7 +52,7 @@ class GameRenderer:
         )
         
         # Header
-        header_text = Text(f"🎮 TAMAGOCHI - {pet.name} the {pet.pet_type.value.upper()} 🎮", 
+        header_text = Text(f"🎮 TAMAGOCLI - {pet.name} the {pet.pet_type.value.upper()} 🎮", 
                           style="bold magenta")
         layout["header"].update(Panel(Align.center(header_text), style="bold"))
         
@@ -191,7 +191,7 @@ class GameRenderer:
         
         text.append("\n\nPress 1-5 to select or Q to quit", style="bold yellow")
         
-        return Panel(Align.center(text), title="🎮 TAMAGOCHI", border_style="magenta")
+        return Panel(Align.center(text), title="🎮 TAMAGOCLI", border_style="magenta")
     
     def _get_pet_description(self, pet_type) -> str:
         """Get description for pet type."""

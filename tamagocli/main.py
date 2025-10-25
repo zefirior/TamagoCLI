@@ -1,4 +1,4 @@
-"""Main entry point for Tamagochi game."""
+"""Main entry point for Tamagocli game."""
 
 import sys
 import os

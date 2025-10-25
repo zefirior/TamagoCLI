@@ -1,4 +1,4 @@
-# 🎮 Tamagochi - Console Pet Game
+# 🎮 Tamagocli - Console Pet Game
 
 A colorful and interactive console-based Tamagochi game with multiple pet types, ASCII art animations, and real-time gameplay!
 
@@ -39,13 +39,13 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ```bash
 # Clone or navigate to the project directory
-cd tamagochi
+cd TamagoCLI
 
 # Create virtual environment and install dependencies
 uv sync
 
 # Run the game
-uv run tamagochi
+uv run tamagocli
 ```
 
 ## 🧪 Development
@@ -60,7 +60,7 @@ uv sync --extra dev
 uv run pytest
 
 # Run with coverage
-uv run pytest --cov=tamagochi --cov-report=html
+uv run pytest --cov=tamagocli --cov-report=html
 
 # Run specific test file
 uv run pytest tests/test_eating_timer.py
@@ -111,10 +111,10 @@ Controls:
 ## 📁 Project Structure
 
 ```
-tamagochi/
+TamagoCLI/
 ├── pyproject.toml           # Project configuration
 ├── README.md                # This file
-└── tamagochi/              # Main package
+└── tamagocli/              # Main package
     ├── __init__.py
     ├── main.py             # Entry point
     ├── models/             # Game models
@@ -135,7 +135,7 @@ tamagochi/
 ### Run from source
 
 ```bash
-uv run python -m tamagochi.main
+uv run python -m tamagocli.main
 ```
 
 ### Add dependencies

@@ -13,7 +13,7 @@ class SaveManager:
     def __init__(self, save_dir: Optional[Path] = None):
         """Initialize save manager."""
         if save_dir is None:
-            save_dir = Path.home() / ".tamagochi"
+            save_dir = Path.home() / ".tamagocli"
         
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
