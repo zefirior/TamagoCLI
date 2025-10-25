@@ -9,7 +9,7 @@ from typing import Optional
 
 from .models.pet import Pet, PetType, PetState
 from .display.renderer import GameRenderer
-from .display.sprites import get_sprite
+from .display.sprites import get_sprite, get_menu_preview
 from .game.engine import GameEngine
 from .game.save_manager import SaveManager
 from .utils.curses_menu import interactive_menu_curses, yes_no_menu_curses
@@ -48,8 +48,7 @@ def select_pet(renderer: GameRenderer) -> Optional[PetType]:
     
     # Preview function to show pet sprite
     def preview_func(index: int):
-        sprite = get_sprite(pet_types[index], PetState.HAPPY, 0)
-        return sprite
+        return get_menu_preview(pet_types[index])
     
     # Show interactive menu with curses (no flickering!)
     def curses_wrapper_func(stdscr):

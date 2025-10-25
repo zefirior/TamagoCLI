@@ -2,7 +2,7 @@
 
 import pytest
 from tamagocli.models.pet import Pet, PetType, PetState
-from tamagocli.display.sprites import get_sprite
+from tamagocli.display.sprites import get_sprite, get_menu_preview
 
 
 class TestSpriteStructure:
@@ -79,6 +79,13 @@ class TestSpriteRendering:
         
         # For CAT SLEEPING, longest line is " ( -.-)zzZ" with 11 chars
         assert max_length == 11
+
+    def test_menu_previews_are_ascii_only(self):
+        """Menu preview sprites must not contain emojis or non-ASCII chars."""
+        for pet_type in [PetType.CAT, PetType.DOG, PetType.DRAGON, PetType.BUNNY, PetType.ALIEN]:
+            preview = get_menu_preview(pet_type)
+            # All characters must be in ASCII range
+            assert all(ord(ch) < 128 for ch in preview), f"Non-ASCII found in menu preview for {pet_type}"
     
     def test_sprite_positioning_logic(self):
         """Test the positioning calculation logic."""

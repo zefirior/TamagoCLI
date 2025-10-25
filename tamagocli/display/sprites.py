@@ -454,3 +454,61 @@ def get_pet_preview(pet_type: PetType) -> str:
     """Get a preview sprite for pet selection."""
     return get_sprite(pet_type, PetState.HAPPY, 0)
 
+
+# ASCII-only menu preview sprites (no emojis or wide characters)
+MENU_PREVIEW_SPRITES = {
+    PetType.CAT: (
+        r"""
+   /\_/\  
+  ( -.- ) 
+   > ^ <
+  /|   |\
+ (_|   |_)
+        """
+    ),
+    PetType.DOG: (
+        r"""
+   /\_/\  
+  ( ^.^ )
+  />  <\
+  U U  U U
+        """
+    ),
+    PetType.DRAGON: (
+        r"""
+    />_   
+   |_  \
+   (__)' \
+    //_\\  \
+   //  \\  \
+   VV   VV  VV
+        """
+    ),
+    PetType.BUNNY: (
+        r"""
+   (\(\
+   ( ^.^)
+   o_(")(")
+        """
+    ),
+    PetType.ALIEN: (
+        r"""
+    .---.
+   /o   o\
+  |   ^   |
+   \  -  /
+    '---'
+   /|   |\
+  /_|   |_\
+        """
+    ),
+}
+
+
+def get_menu_preview(pet_type: PetType) -> str:
+    """Return ASCII-only menu preview sprite for given pet type."""
+    sprite = MENU_PREVIEW_SPRITES.get(pet_type)
+    if not sprite:
+        return "???"
+    return sprite
+

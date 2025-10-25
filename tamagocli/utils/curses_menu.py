@@ -3,6 +3,33 @@
 import curses
 from typing import List, Optional, Callable
 
+# Display-width helpers (handle wide emojis correctly)
+try:
+    from wcwidth import wcswidth as _wcswidth
+
+    def _display_width(s: str) -> int:
+        w = _wcswidth(s)
+        return w if w >= 0 else len(s)
+
+    def _truncate_to_cells(s: str, max_cells: int) -> str:
+        acc = 0
+        out_chars: List[str] = []
+        for ch in s:
+            ch_w = _wcswidth(ch)
+            if ch_w < 0:
+                ch_w = 1
+            if acc + ch_w > max_cells:
+                break
+            out_chars.append(ch)
+            acc += ch_w
+        return "".join(out_chars)
+except Exception:  # Fallback to naive behavior
+    def _display_width(s: str) -> int:
+        return len(s)
+
+    def _truncate_to_cells(s: str, max_cells: int) -> str:
+        return s[:max_cells]
+
 
 def interactive_menu_curses(
     stdscr,
@@ -43,7 +70,7 @@ def interactive_menu_curses(
     
     # Calculate layout once
     height, width = stdscr.getmaxyx()
-    menu_width = 45
+    menu_width = 55
     preview_width = 45
     total_width = menu_width + preview_width + 4
     start_x = max(0, (width - total_width) // 2)
@@ -90,24 +117,35 @@ def interactive_menu_curses(
                 attr = curses.color_pair(5)
             
             text = f"{prefix}{option}"
-            if len(text) > menu_width - 4:
-                text = text[:menu_width - 7] + "..."
+            if _display_width(text) > menu_width - 4:
+                text = _truncate_to_cells(text, menu_width - 7) + "..."
             
             stdscr.addstr(line_y, left_x, "│ ")
-            stdscr.addstr(text.ljust(menu_width - 4), attr)
-            stdscr.addstr(" │")
+            stdscr.addstr(text, attr)
+            # Pad to fixed right border position to handle wide chars
+            y_cur, x_cur = stdscr.getyx()
+            target_x = left_x + menu_width - 1
+            if x_cur < target_x:
+                stdscr.addstr(" " * (target_x - x_cur))
+            stdscr.addstr("│")
             line_y += 1
             
             # Description
             if descriptions and i < len(descriptions):
                 desc = descriptions[i]
-                if len(desc) > menu_width - 6:
-                    desc = desc[:menu_width - 9] + "..."
+                if _display_width(desc) > menu_width - 6:
+                    desc = _truncate_to_cells(desc, menu_width - 9) + "..."
                 
                 desc_attr = curses.color_pair(2) if i == selected else curses.A_DIM
                 stdscr.addstr(line_y, left_x, "│ ")
-                stdscr.addstr(f"  {desc}".ljust(menu_width - 4), desc_attr)
-                stdscr.addstr(" │")
+                desc_text = f"  {desc}"
+                stdscr.addstr(desc_text, desc_attr)
+                # Pad to fixed right border position to handle wide chars
+                y_cur, x_cur = stdscr.getyx()
+                target_x = left_x + menu_width - 1
+                if x_cur < target_x:
+                    stdscr.addstr(" " * (target_x - x_cur))
+                stdscr.addstr("│")
                 line_y += 1
         
         # Fill remaining lines
@@ -139,11 +177,10 @@ def interactive_menu_curses(
                 
                 if i >= offset and i - offset < len(preview_lines):
                     line = preview_lines[i - offset]
-                    line_len = len(line)
-                    x_offset = max(0, (preview_width - 4 - line_len) // 2)
-                    content = " " * x_offset + line
-                    if len(content) > preview_width - 4:
-                        content = content[:preview_width - 4]
+                    line_width = _display_width(line)
+                    x_offset = max(0, (preview_width - 4 - line_width) // 2)
+                    visible = _truncate_to_cells(line, preview_width - 4)
+                    content = " " * x_offset + visible
                     stdscr.addstr(content.ljust(preview_width - 2), 
                                 curses.color_pair(4))
                 else:
@@ -186,25 +223,36 @@ def interactive_menu_curses(
                         attr = curses.color_pair(5)
                     
                     text = f"{prefix}{option}"
-                    if len(text) > menu_width - 4:
-                        text = text[:menu_width - 7] + "..."
+                    if _display_width(text) > menu_width - 4:
+                        text = _truncate_to_cells(text, menu_width - 7) + "..."
                     
                     stdscr.addstr(line_y, left_x, "│ ")
-                    stdscr.addstr(text.ljust(menu_width - 4), attr)
-                    stdscr.addstr(" │")
+                    stdscr.addstr(text, attr)
+                    # Pad to fixed right border position to handle wide chars
+                    y_cur, x_cur = stdscr.getyx()
+                    target_x = left_x + menu_width - 1
+                    if x_cur < target_x:
+                        stdscr.addstr(" " * (target_x - x_cur))
+                    stdscr.addstr("│")
                 line_y += 1
                 
                 # Description
                 if descriptions and i < len(descriptions):
                     if i == selected or i == prev_selected:
                         desc = descriptions[i]
-                        if len(desc) > menu_width - 6:
-                            desc = desc[:menu_width - 9] + "..."
+                        if _display_width(desc) > menu_width - 6:
+                            desc = _truncate_to_cells(desc, menu_width - 9) + "..."
                         
                         desc_attr = curses.color_pair(2) if i == selected else curses.A_DIM
                         stdscr.addstr(line_y, left_x, "│ ")
-                        stdscr.addstr(f"  {desc}".ljust(menu_width - 4), desc_attr)
-                        stdscr.addstr(" │")
+                        desc_text = f"  {desc}"
+                        stdscr.addstr(desc_text, desc_attr)
+                        # Pad to fixed right border position to handle wide chars
+                        y_cur, x_cur = stdscr.getyx()
+                        target_x = left_x + menu_width - 1
+                        if x_cur < target_x:
+                            stdscr.addstr(" " * (target_x - x_cur))
+                        stdscr.addstr("│")
                     line_y += 1
             
             # Redraw preview title (changed)
@@ -234,11 +282,10 @@ def interactive_menu_curses(
                     if i >= offset and i - offset < len(preview_lines):
                         line = preview_lines[i - offset]
                         # Center horizontally
-                        line_len = len(line)
-                        x_offset = max(0, (preview_width - 4 - line_len) // 2)
-                        content = " " * x_offset + line
-                        if len(content) > preview_width - 4:
-                            content = content[:preview_width - 4]
+                        line_width = _display_width(line)
+                        x_offset = max(0, (preview_width - 4 - line_width) // 2)
+                        visible = _truncate_to_cells(line, preview_width - 4)
+                        content = " " * x_offset + visible
                         stdscr.addstr(content.ljust(preview_width - 2), 
                                     curses.color_pair(4))
                     else:
