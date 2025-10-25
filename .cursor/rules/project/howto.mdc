@@ -1,0 +1,674 @@
+---
+alwaysApply: true
+---
+
+# How to Work with Tamagochi
+
+## Quick Start
+
+### Install and Run
+```bash
+# Install uv (if needed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Setup project
+cd /Users/liinda/pet/tamagochi
+uv sync
+
+# Run the game
+uv run tamagochi
+```
+
+### Alternative Run Methods
+```bash
+# Direct module execution
+uv run python -m tamagochi.main
+
+# If installed as package
+tamagochi
+```
+
+## Development Setup
+
+### Install Dev Dependencies
+```bash
+# Install all dependencies including dev tools
+uv sync --extra dev
+```
+
+### Add New Dependencies
+```bash
+# Production dependency
+uv add <package-name>
+
+# Development dependency
+uv add --group dev <package-name>
+```
+
+## Testing
+
+### Run Tests
+```bash
+# All tests
+uv run pytest
+
+# Specific test file
+uv run pytest tests/test_eating_timer.py
+
+# Specific test class
+uv run pytest tests/test_eating_timer.py::TestEatingTimer
+
+# Specific test method
+uv run pytest tests/test_eating_timer.py::TestEatingTimer::test_eating_starts_correctly
+
+# Verbose output
+uv run pytest -v
+
+# With coverage
+uv run pytest --cov=tamagochi --cov-report=html
+open htmlcov/index.html
+
+# Skip slow tests
+uv run pytest -m "not slow"
+
+# Only slow tests
+uv run pytest -m slow
+```
+
+### Test Markers
+- `@pytest.mark.slow` - Long-running tests
+- `@pytest.mark.integration` - Integration tests
+
+### Writing New Tests
+```python
+# tests/test_new_feature.py
+import pytest
+from tamagochi.models.pet import Pet, PetType
+
+class TestNewFeature:
+    def test_something(self):
+        pet = Pet("Test", PetType.CAT)
+        assert pet.name == "Test"
+        assert pet.pet_type == PetType.CAT
+```
+
+## Code Quality
+
+### Format Code
+```bash
+# Format all Python files
+uv run ruff format .
+
+# Check formatting without changing
+uv run ruff format --check .
+```
+
+### Linting
+```bash
+# Lint codebase (if ruff is configured)
+uv run ruff check .
+
+# Fix auto-fixable issues
+uv run ruff check --fix .
+```
+
+## Project Structure Navigation
+
+### Key Files to Edit
+
+**Adding New Pet Type:**
+1. `tamagochi/models/pet.py` - Add to PetType enum
+2. `tamagochi/display/sprites.py` - Add sprite dictionary
+3. `tamagochi/models/pet.py` - Add type traits in Pet.__post_init__
+4. `tamagochi/main.py` - Add description in select_pet()
+
+**Adding New State:**
+1. `tamagochi/models/pet.py` - Add to PetState enum
+2. `tamagochi/display/sprites.py` - Add sprites for all pet types
+3. `tamagochi/models/pet.py` - Update _update_state() logic
+4. `tamagochi/display/curses_renderer.py` - Add color pair if needed
+
+**Adding New Action:**
+1. `tamagochi/models/pet.py` - Add method to Pet class
+2. `tamagochi/game/engine.py` - Add command handler in _handle_command()
+3. `tamagochi/display/action_menu.py` - Add to actions list
+4. Add tests in `tests/test_pet_model.py`
+
+**Modifying UI:**
+- Layout changes: `tamagochi/display/curses_renderer.py`
+- Colors: `tamagochi/display/curses_renderer.py` (color pairs)
+- Sprites: `tamagochi/display/sprites.py`
+- Menus: `tamagochi/utils/curses_menu.py`
+
+**Changing Game Mechanics:**
+- Stat decay rates: `Pet.__post_init__` type traits
+- Update frequency: `GameEngine.run()` timers
+- Auto-save interval: `GameEngine.run()` (30 seconds)
+- Stat bounds: `PetStats.__post_init__`
+
+## Debugging
+
+### Enable Verbose Output
+```python
+# In tamagochi/game/engine.py
+# Add debug prints in update loop
+def run(self):
+    while self.running:
+        print(f"DEBUG: {self.pet.stats}")  # Add debug output
+        ...
+```
+
+### Debug Curses Issues
+```python
+# Run without curses wrapper to see exceptions
+# In tamagochi/main.py - temporarily disable wrapper
+try:
+    game_loop(curses.initscr())  # Instead of curses.wrapper()
+except Exception as e:
+    print(f"Error: {e}")
+    import traceback
+    traceback.print_exc()
+```
+
+### Check Save Files
+```bash
+# View current save
+cat ~/.tamagochi/save.json | python -m json.tool
+
+# Delete save for fresh start
+rm ~/.tamagochi/save.json
+```
+
+### Test Rendering Without Playing
+```python
+# Create standalone test script
+from tamagochi.models.pet import Pet, PetType
+from tamagochi.display.sprites import get_sprite
+
+pet = Pet("Test", PetType.CAT)
+sprite = get_sprite(pet.pet_type, pet.state, 0)
+print(sprite)
+```
+
+## Common Tasks
+
+### Update Pet Type Traits
+```python
+# In tamagochi/models/pet.py - Pet.__post_init__()
+self._type_traits = {
+    PetType.CAT: {
+        "hunger_decay": 1.0,      # Higher = decays faster
+        "happiness_decay": 0.8,   # Lower = decays slower
+        "energy_decay": 0.7,
+        "food_efficiency": 1.2,   # Higher = more effective feeding
+    },
+    # ... add new pet type here
+}
+```
+
+### Adjust Game Balance
+```python
+# In tamagochi/models/pet.py - Pet.update()
+
+# Base decay rates (per 10 seconds)
+self.accumulated_hunger_decay += decay_rate * 50  # Change 50 to adjust
+self.accumulated_happiness_decay += decay_rate * 30  # Change 30
+self.accumulated_energy_decay += decay_rate * 20  # Change 20
+
+# Health damage rates (per second when starving)
+if self.stats.hunger <= 0:
+    self.accumulated_damage += decay_rate * 30  # Change 30 for damage rate
+```
+
+### Change Animation Speed
+```python
+# In tamagochi/display/curses_renderer.py - render_game()
+if self.animation_frame % 10 == 0:  # Change 10 to adjust frame rate
+    pet_changed = True
+```
+
+### Modify Save Location
+```python
+# In tamagochi/game/save_manager.py - SaveManager.__init__()
+if save_dir is None:
+    save_dir = Path.home() / ".tamagochi"  # Change path here
+```
+
+## Playing the Game
+
+### Controls
+- **Arrow Keys** (←/→): Navigate menu
+- **Enter**: Select action
+- **F**: Feed pet
+- **P**: Play with pet
+- **S**: Sleep/Wake up
+- **H**: Heal pet
+- **Q**: Save and quit
+
+### Game Mechanics Reference
+- **Hunger**: Decays over time, feed when < 50
+- **Happiness**: Decays over time, play when < 50
+- **Energy**: Decays during play, sleep when < 30
+- **Health**: Damaged when hunger/energy = 0 or happiness < 20
+
+### Pet Type Differences
+- **Cat**: Low maintenance, efficient eater
+- **Dog**: Needs attention, always hungry
+- **Dragon**: Eats a lot, high stamina
+- **Bunny**: Efficient eater, balanced
+- **Alien**: Minimal hunger, needs entertainment
+
+## Tips for Development
+
+1. **Test changes with different pet types** - They have different behaviors
+2. **Use pytest for regression testing** - Run tests after changes
+3. **Check save compatibility** - Old saves should load after changes
+4. **Test terminal resize** - Curses UI should adapt
+5. **Profile performance** - Game loop runs every 50ms, keep it fast
+6. **Add events for player feedback** - Use _add_event() in engine
+7. **Maintain differential rendering** - Only update changed elements
+8. **Preserve accumulated values** - Don't lose fractional stat changes
+
+## Troubleshooting
+
+### Terminal Issues
+```bash
+# Reset terminal if corrupted
+reset
+
+# If terminal stuck after crash
+stty sane
+```
+
+### Import Errors
+```bash
+# Reinstall dependencies
+uv sync --reinstall
+
+# Clear cache
+rm -rf .pytest_cache __pycache__ tamagochi/__pycache__
+```
+
+### Test Failures
+```bash
+# Run single failing test with verbose output
+uv run pytest tests/test_name.py::test_method -vv
+
+# Debug with print statements (pytest captures output)
+uv run pytest -s  # Shows print statements
+```
+
+### Save File Corruption
+```bash
+# Backup saves
+cp ~/.tamagochi/save.json ~/.tamagochi/save.json.backup
+
+# Validate JSON
+python -m json.tool ~/.tamagochi/save.json
+```
+
+## Release Checklist
+
+1. Run all tests: `uv run pytest`
+2. Format code: `uv run ruff format .`
+3. Check coverage: `uv run pytest --cov=tamagochi`
+4. Test clean install: `uv sync --reinstall`
+5. Test game startup: `uv run tamagochi`
+6. Create new pet and play for 5 minutes
+7. Save and reload game
+8. Update README.md if needed
+9. Commit changes with descriptive message
+
+## Performance Optimization
+
+### Rendering Performance
+- Differential rendering minimizes redraws
+- noutrefresh() + doupdate() for double buffering
+- Avoid clearing entire screen
+- Update only changed regions
+
+### Game Loop Performance
+- Non-blocking input with 50ms timeout
+- Update pet state every 1 second
+- Accumulate fractional stat changes
+- Minimize string operations in hot loop
+
+### Save Performance
+- Auto-save every 30 seconds (not every frame)
+- Use JSON for human-readable format
+- Consider msgpack for faster serialization if needed
+# How to Work with Tamagochi
+
+## Quick Start
+
+### Install and Run
+```bash
+# Install uv (if needed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Setup project
+cd /Users/liinda/pet/tamagochi
+uv sync
+
+# Run the game
+uv run tamagochi
+```
+
+### Alternative Run Methods
+```bash
+# Direct module execution
+uv run python -m tamagochi.main
+
+# If installed as package
+tamagochi
+```
+
+## Development Setup
+
+### Install Dev Dependencies
+```bash
+# Install all dependencies including dev tools
+uv sync --extra dev
+```
+
+### Add New Dependencies
+```bash
+# Production dependency
+uv add <package-name>
+
+# Development dependency
+uv add --group dev <package-name>
+```
+
+## Testing
+
+### Run Tests
+```bash
+# All tests
+uv run pytest
+
+# Specific test file
+uv run pytest tests/test_eating_timer.py
+
+# Specific test class
+uv run pytest tests/test_eating_timer.py::TestEatingTimer
+
+# Specific test method
+uv run pytest tests/test_eating_timer.py::TestEatingTimer::test_eating_starts_correctly
+
+# Verbose output
+uv run pytest -v
+
+# With coverage
+uv run pytest --cov=tamagochi --cov-report=html
+open htmlcov/index.html
+
+# Skip slow tests
+uv run pytest -m "not slow"
+
+# Only slow tests
+uv run pytest -m slow
+```
+
+### Test Markers
+- `@pytest.mark.slow` - Long-running tests
+- `@pytest.mark.integration` - Integration tests
+
+### Writing New Tests
+```python
+# tests/test_new_feature.py
+import pytest
+from tamagochi.models.pet import Pet, PetType
+
+class TestNewFeature:
+    def test_something(self):
+        pet = Pet("Test", PetType.CAT)
+        assert pet.name == "Test"
+        assert pet.pet_type == PetType.CAT
+```
+
+## Code Quality
+
+### Format Code
+```bash
+# Format all Python files
+uv run ruff format .
+
+# Check formatting without changing
+uv run ruff format --check .
+```
+
+### Linting
+```bash
+# Lint codebase (if ruff is configured)
+uv run ruff check .
+
+# Fix auto-fixable issues
+uv run ruff check --fix .
+```
+
+## Project Structure Navigation
+
+### Key Files to Edit
+
+**Adding New Pet Type:**
+1. `tamagochi/models/pet.py` - Add to PetType enum
+2. `tamagochi/display/sprites.py` - Add sprite dictionary
+3. `tamagochi/models/pet.py` - Add type traits in Pet.__post_init__
+4. `tamagochi/main.py` - Add description in select_pet()
+
+**Adding New State:**
+1. `tamagochi/models/pet.py` - Add to PetState enum
+2. `tamagochi/display/sprites.py` - Add sprites for all pet types
+3. `tamagochi/models/pet.py` - Update _update_state() logic
+4. `tamagochi/display/curses_renderer.py` - Add color pair if needed
+
+**Adding New Action:**
+1. `tamagochi/models/pet.py` - Add method to Pet class
+2. `tamagochi/game/engine.py` - Add command handler in _handle_command()
+3. `tamagochi/display/action_menu.py` - Add to actions list
+4. Add tests in `tests/test_pet_model.py`
+
+**Modifying UI:**
+- Layout changes: `tamagochi/display/curses_renderer.py`
+- Colors: `tamagochi/display/curses_renderer.py` (color pairs)
+- Sprites: `tamagochi/display/sprites.py`
+- Menus: `tamagochi/utils/curses_menu.py`
+
+**Changing Game Mechanics:**
+- Stat decay rates: `Pet.__post_init__` type traits
+- Update frequency: `GameEngine.run()` timers
+- Auto-save interval: `GameEngine.run()` (30 seconds)
+- Stat bounds: `PetStats.__post_init__`
+
+## Debugging
+
+### Enable Verbose Output
+```python
+# In tamagochi/game/engine.py
+# Add debug prints in update loop
+def run(self):
+    while self.running:
+        print(f"DEBUG: {self.pet.stats}")  # Add debug output
+        ...
+```
+
+### Debug Curses Issues
+```python
+# Run without curses wrapper to see exceptions
+# In tamagochi/main.py - temporarily disable wrapper
+try:
+    game_loop(curses.initscr())  # Instead of curses.wrapper()
+except Exception as e:
+    print(f"Error: {e}")
+    import traceback
+    traceback.print_exc()
+```
+
+### Check Save Files
+```bash
+# View current save
+cat ~/.tamagochi/save.json | python -m json.tool
+
+# Delete save for fresh start
+rm ~/.tamagochi/save.json
+```
+
+### Test Rendering Without Playing
+```python
+# Create standalone test script
+from tamagochi.models.pet import Pet, PetType
+from tamagochi.display.sprites import get_sprite
+
+pet = Pet("Test", PetType.CAT)
+sprite = get_sprite(pet.pet_type, pet.state, 0)
+print(sprite)
+```
+
+## Common Tasks
+
+### Update Pet Type Traits
+```python
+# In tamagochi/models/pet.py - Pet.__post_init__()
+self._type_traits = {
+    PetType.CAT: {
+        "hunger_decay": 1.0,      # Higher = decays faster
+        "happiness_decay": 0.8,   # Lower = decays slower
+        "energy_decay": 0.7,
+        "food_efficiency": 1.2,   # Higher = more effective feeding
+    },
+    # ... add new pet type here
+}
+```
+
+### Adjust Game Balance
+```python
+# In tamagochi/models/pet.py - Pet.update()
+
+# Base decay rates (per 10 seconds)
+self.accumulated_hunger_decay += decay_rate * 50  # Change 50 to adjust
+self.accumulated_happiness_decay += decay_rate * 30  # Change 30
+self.accumulated_energy_decay += decay_rate * 20  # Change 20
+
+# Health damage rates (per second when starving)
+if self.stats.hunger <= 0:
+    self.accumulated_damage += decay_rate * 30  # Change 30 for damage rate
+```
+
+### Change Animation Speed
+```python
+# In tamagochi/display/curses_renderer.py - render_game()
+if self.animation_frame % 10 == 0:  # Change 10 to adjust frame rate
+    pet_changed = True
+```
+
+### Modify Save Location
+```python
+# In tamagochi/game/save_manager.py - SaveManager.__init__()
+if save_dir is None:
+    save_dir = Path.home() / ".tamagochi"  # Change path here
+```
+
+## Playing the Game
+
+### Controls
+- **Arrow Keys** (←/→): Navigate menu
+- **Enter**: Select action
+- **F**: Feed pet
+- **P**: Play with pet
+- **S**: Sleep/Wake up
+- **H**: Heal pet
+- **Q**: Save and quit
+
+### Game Mechanics Reference
+- **Hunger**: Decays over time, feed when < 50
+- **Happiness**: Decays over time, play when < 50
+- **Energy**: Decays during play, sleep when < 30
+- **Health**: Damaged when hunger/energy = 0 or happiness < 20
+
+### Pet Type Differences
+- **Cat**: Low maintenance, efficient eater
+- **Dog**: Needs attention, always hungry
+- **Dragon**: Eats a lot, high stamina
+- **Bunny**: Efficient eater, balanced
+- **Alien**: Minimal hunger, needs entertainment
+
+## Tips for Development
+
+1. **Test changes with different pet types** - They have different behaviors
+2. **Use pytest for regression testing** - Run tests after changes
+3. **Check save compatibility** - Old saves should load after changes
+4. **Test terminal resize** - Curses UI should adapt
+5. **Profile performance** - Game loop runs every 50ms, keep it fast
+6. **Add events for player feedback** - Use _add_event() in engine
+7. **Maintain differential rendering** - Only update changed elements
+8. **Preserve accumulated values** - Don't lose fractional stat changes
+
+## Troubleshooting
+
+### Terminal Issues
+```bash
+# Reset terminal if corrupted
+reset
+
+# If terminal stuck after crash
+stty sane
+```
+
+### Import Errors
+```bash
+# Reinstall dependencies
+uv sync --reinstall
+
+# Clear cache
+rm -rf .pytest_cache __pycache__ tamagochi/__pycache__
+```
+
+### Test Failures
+```bash
+# Run single failing test with verbose output
+uv run pytest tests/test_name.py::test_method -vv
+
+# Debug with print statements (pytest captures output)
+uv run pytest -s  # Shows print statements
+```
+
+### Save File Corruption
+```bash
+# Backup saves
+cp ~/.tamagochi/save.json ~/.tamagochi/save.json.backup
+
+# Validate JSON
+python -m json.tool ~/.tamagochi/save.json
+```
+
+## Release Checklist
+
+1. Run all tests: `uv run pytest`
+2. Format code: `uv run ruff format .`
+3. Check coverage: `uv run pytest --cov=tamagochi`
+4. Test clean install: `uv sync --reinstall`
+5. Test game startup: `uv run tamagochi`
+6. Create new pet and play for 5 minutes
+7. Save and reload game
+8. Update README.md if needed
+9. Commit changes with descriptive message
+
+## Performance Optimization
+
+### Rendering Performance
+- Differential rendering minimizes redraws
+- noutrefresh() + doupdate() for double buffering
+- Avoid clearing entire screen
+- Update only changed regions
+
+### Game Loop Performance
+- Non-blocking input with 50ms timeout
+- Update pet state every 1 second
+- Accumulate fractional stat changes
+- Minimize string operations in hot loop
+
+### Save Performance
+- Auto-save every 30 seconds (not every frame)
+- Use JSON for human-readable format
+- Consider msgpack for faster serialization if needed
